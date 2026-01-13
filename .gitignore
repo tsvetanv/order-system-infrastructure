@@ -1,0 +1,35 @@
+### Terraform ###
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfstate.*
+crash.log
+
+### IDE - IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+*.class
+*.jar
+
+### IDE - VS Code ###
+.vscode/*
+.history/
+.settings/
+
+### Environment / Local Run ###
+.env
+*.local
+*.secret
+*.tmp
+*.bak
+*.swp
+
+### Logs ###
+logs/
+*.log
+*.out
+
