@@ -2,9 +2,13 @@
 .terraform/
 *.tfstate
 *.tfstate.backup
-.terraform.lock.hcl
 *.tfstate.*
 crash.log
+.terraform.lock.hcl
+
+# Terraform variables (secrets)
+*.tfvars
+*.tfvars.json
 
 ### IDE - IntelliJ IDEA ###
 .idea/
@@ -32,4 +36,3 @@ out/
 logs/
 *.log
 *.out
-

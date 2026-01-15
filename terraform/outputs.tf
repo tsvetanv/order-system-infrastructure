@@ -1,8 +1,11 @@
-/*
-  Outputs will be added once real infrastructure exists.
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
 
-  Examples in later iterations:
-  - service_url
-  - database_endpoint
-  - load_balancer_dns
-*/
+output "rds_endpoint" {
+  value = aws_db_instance.postgres.endpoint
+}
+
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.main.name
+}

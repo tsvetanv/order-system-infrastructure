@@ -124,3 +124,23 @@ These additions will build on the existing structure without requiring rework.
 
 This repository intentionally favors **clarity and structure** over completeness.
 Infrastructure will be added when architectural decisions are validated and stable.
+
+## CI/CD & Infrastructure Lifecycle
+
+This repository defines the infrastructure lifecycle for the
+Order Processing System using Terraform.
+
+The CI pipeline validates infrastructure code by running:
+
+- terraform init
+- terraform validate
+
+Infrastructure is applied manually to preserve control
+during early system iterations.
+
+### Relationship to Application CI
+
+Application build and container image publication are handled
+in the `order-system-services` repository.
+
+This repository focuses exclusively on infrastructure provisioning.
