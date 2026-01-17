@@ -2,15 +2,17 @@
 
 ## Overview
 
-This repository contains the **Infrastructure as Code (IaC)** foundation for the
-Order Processing System.
+This repository contains the **Infrastructure as Code (IaC)** for the  
+**Order Processing System**, implemented using **Terraform** and deployed on **AWS**.
 
-Its purpose is to provide a **clean, evolvable Terraform project structure**
-that supports multiple environments and future cloud deployment, while keeping
-infrastructure concerns clearly separated from application code.
+Its purpose is to:
 
-At the current stage, the repository contains **bootstrap-level configuration only**.
-No cloud providers or infrastructure resources are defined yet.
+- Define and document the **cloud infrastructure architecture**
+- Provide a **clear, evolvable Terraform structure**
+- Separate infrastructure concerns from application code
+
+At this stage, the infrastructure is **intentionally simple, single-environment, and manually operated**.  
+Automation and multi-environment support will be introduced in later iterations.
 
 ---
 
@@ -19,11 +21,10 @@ No cloud providers or infrastructure resources are defined yet.
 This repository follows these principles:
 
 - Infrastructure is treated as **code**
-- Infrastructure evolves **incrementally**, together with the system architecture
-- Environment isolation is enforced via **separate Terraform backends**
-- Cloud-specific decisions are introduced **intentionally and later**
-
-The initial focus is on **structure, boundaries, and readiness**, not provisioning.
+- Infrastructure evolves **incrementally**, aligned with architectural maturity
+- Clear separation between:
+  - infrastructure provisioning
+  - application build & deployment
 
 ---
 
@@ -34,113 +35,152 @@ order-system-infrastructure
 │
 ├── terraform/
 │   ├── main.tf
+│   ├── providers.tf
 │   ├── variables.tf
-│   └── outputs.tf
+│   ├── outputs.tf
+│   ├── networking.tf
+│   ├── security.tf
+│   ├── rds.tf
+│   ├── ecs.tf
+│   └── service.tf
 │
 ├── envs/
-│   └── local/
-│       └── backend.tf
+│   ├── local/
+│   └── aws/
+│       └── terraform.tfvars
 │
-├── .gitignore
+├── scripts/
+│   └── infra-destroy.sh
+│
+├── order-service-aws.postman_collection.json
 └── README.md
 ```
-
-### terraform/
-
-Contains the **core Terraform configuration** shared by all environments.
-
-- No environment-specific logic
-- No cloud providers at bootstrap stage
-- Serves as the foundation for future infrastructure definitions
-
-### envs/
-
-Contains **environment-specific configuration**, primarily backend definitions.
-
-Each environment:
-- Uses the same Terraform code
-- Has its own backend and state
-- Is fully isolated from other environments
-
-Currently defined:
-- local – local backend for development and experimentation
-
-Future environments will be added here (e.g. dev, staging, prod).
-
----
-
-## Environment Strategy
-
-The project uses an **environment-per-backend** approach:
-
-- One Terraform state per environment
-- No shared state between environments
-- Safe parallel evolution of environments
-
-This approach supports both local development and future cloud deployments
-without structural changes to the repository.
 
 ---
 
 ## Current State
 
-- Terraform backend: local
-- Environments: local
-- Providers: none
-- Resources: none
+### Infrastructure
 
-This is a deliberate starting point that enables early validation of
-infrastructure structure without premature cloud coupling.
+- Cloud provider: **AWS**
+- Region: **eu-central-1**
+- Environment model: **single environment**
+- Terraform backend: **local**
+- State management: **manual**
+- Apply/destroy: **manual**
+
+### Core AWS Components
+
+- VPC (custom)
+- Application Load Balancer (ALB)
+- ECS Cluster (Fargate)
+- ECS Service (Order Service)
+- RDS PostgreSQL (orders database)
+- Security Groups (ALB ↔ ECS ↔ RDS)
+
+---
+
+## Network Architecture
+
+```
+Internet
+   |
+   v
+Application Load Balancer (ALB) [public]
+   |
+   v
+ECS Service (Fargate)
+   |
+   v
+Order Service (Spring Boot, port 8081)
+   |
+   v
+PostgreSQL Database (Amazon RDS)
+```
+
+---
+
+## Deployment Flow (Manual – Current State)
+
+> ⚠️ Deployment is intentionally **manual** at this stage.
+
+Terraform manages ECS, ALB, networking and RDS.
+Application deployment occurs via ECS service update pulling the latest image.
+
+
+### 1. Build Application Artifact
+
+- Build Spring Boot application
+- Package executable JAR
+- Performed in `order-system-services` repository
+
+### 2. Build Docker Image
+
+- Dockerfile lives in `order-system-services/order-service`
+- Image built locally
+- Tag: `order-processing-system-order-service:latest`
+
+### 3. Push Image to Amazon ECR
+
+- Authenticate Docker to ECR
+- Tag image with ECR repository URI
+- Push image
+
+### 4. Provision / Update Infrastructure (Terraform)
+
+- terraform init
+- terraform plan
+- terraform apply
+
+Terraform manages ECS, ALB, networking and RDS.
+
+### 5. Verify Deployment
+
+- Use ALB DNS endpoint
+- Validate with Postman collection:
+  - Health check
+  - Create order
+  - Get order
+  - Cancel order
+
+### 6. Infrastructure Teardown
+
+- Manual destroy to control cloud costs
+- Script: `scripts/infra-destroy.sh`
+
+---
+
+## CI/CD Status
+
+### Infrastructure
+
+- No automated apply
+- No remote state
+- Manual lifecycle
+
+### Application
+
+- CI/CD temporarily frozen
+- Will be revisited after documentation iteration
 
 ---
 
 ## Relationship to Other Repositories
 
-- order-system-services  
-  Application code, runtime configuration, and containerization
+- **order-system-services**
+  - Application code and Docker images
 
-- order-system-infrastructure  
-  Infrastructure definitions and environment provisioning
-
-The two repositories evolve together but remain **loosely coupled**.
+- **order-system-infrastructure**
+  - Cloud provisioning and deployment topology
 
 ---
 
 ## Future Evolution
 
-In subsequent iterations, this repository will be extended with:
+Planned but postponed:
 
-- Cloud provider configuration (AWS)
-- Remote state backends
-- Additional environments (dev, staging, prod)
-- Networking, compute, and database resources
-- Deployment and observability infrastructure
-
-These additions will build on the existing structure without requiring rework.
-
----
-
-## Notes
-
-This repository intentionally favors **clarity and structure** over completeness.
-Infrastructure will be added when architectural decisions are validated and stable.
-
-## CI/CD & Infrastructure Lifecycle
-
-This repository defines the infrastructure lifecycle for the
-Order Processing System using Terraform.
-
-The CI pipeline validates infrastructure code by running:
-
-- terraform init
-- terraform validate
-
-Infrastructure is applied manually to preserve control
-during early system iterations.
-
-### Relationship to Application CI
-
-Application build and container image publication are handled
-in the `order-system-services` repository.
-
-This repository focuses exclusively on infrastructure provisioning.
+- Remote Terraform backend
+- Multiple environments
+- CI/CD automation
+- Visual infrastructure diagrams
+- Observability
