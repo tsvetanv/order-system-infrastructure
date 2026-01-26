@@ -19,12 +19,13 @@ Automation and multi-environment support will be introduced in later iterations.
 ## Scope & Principles
 
 This repository follows these principles:
-
+ 
 - Infrastructure is treated as **code**
 - Infrastructure evolves **incrementally**, aligned with architectural maturity
 - Clear separation between:
   - infrastructure provisioning
   - application build & deployment
+- Explicit and manual control over **cloud cost lifecycle**
 
 ---
 
@@ -46,15 +47,39 @@ order-system-infrastructure
 │
 ├── envs/
 │   ├── local/
+│   │   ├── backend.hcl
+│   │   └── terraform.tfvars
+│   │
 │   └── aws/
+│       ├── backend.hcl
 │       └── terraform.tfvars
 │
 ├── scripts/
 │   └── infra-destroy.sh
 │
-├── order-service-aws.postman_collection.json
 └── README.md
 ```
+
+---
+
+## Environment Model
+
+This repository uses a **single Terraform root** with **explicit environment configuration**.
+
+Environment differences are expressed via:
+- `backend.hcl` → where Terraform state is stored
+- `terraform.tfvars` → environment-specific values
+
+Currently supported environments:
+
+| Environment | Purpose | Backend |
+|-----------|--------|--------|
+| `local` | Local / dev-friendly configuration | local state |
+| `aws` | Real AWS infrastructure | local state (AWS resources) |
+
+> ⚠️ There is **no automatic environment switching**.  
+> The environment is selected explicitly when running Terraform.
+
 
 ---
 
@@ -100,87 +125,93 @@ PostgreSQL Database (Amazon RDS)
 
 ---
 
-## Deployment Flow (Manual – Current State)
+---
 
-> ⚠️ Deployment is intentionally **manual** at this stage.
+## Running Terraform (Most Important Section)
 
-Terraform manages ECS, ALB, networking and RDS.
-Application deployment occurs via ECS service update pulling the latest image.
+All Terraform commands are executed from the **repository root**, targeting the  
+`terraform/` directory via `-chdir`.
 
+### General Rules
 
-### 1. Build Application Artifact
-
-- Build Spring Boot application
-- Package executable JAR
-- Performed in `order-system-services` repository
-
-### 2. Build Docker Image
-
-- Dockerfile lives in `order-system-services/order-service`
-- Image built locally
-- Tag: `order-processing-system-order-service:latest`
-
-### 3. Push Image to Amazon ECR
-
-- Authenticate Docker to ECR
-- Tag image with ECR repository URI
-- Push image
-
-### 4. Provision / Update Infrastructure (Terraform)
-
-- terraform init
-- terraform plan
-- terraform apply
-
-Terraform manages ECS, ALB, networking and RDS.
-
-### 5. Verify Deployment
-
-- Use ALB DNS endpoint
-- Validate with Postman collection:
-  - Health check
-  - Create order
-  - Get order
-  - Cancel order
-
-### 6. Infrastructure Teardown
-
-- Manual destroy to control cloud costs
-- Script: `scripts/infra-destroy.sh`
+- Terraform is **always executed from `terraform/`**
+- Environment is selected explicitly via:
+  - `-backend-config=../envs/<env>/backend.hcl`
+  - `-var-file=../envs/<env>/terraform.tfvars`
+- There is **no implicit default environment**
 
 ---
 
-## CI/CD Status
+## Terraform Init
 
-### Infrastructure
+Initializes Terraform and configures the backend.
 
-- No automated apply
-- No remote state
-- Manual lifecycle
+### AWS environment
+```bash
+terraform -chdir=terraform init -backend-config=../envs/aws/backend.hcl
+```
 
-### Application
-
-- CI/CD temporarily frozen
-- Will be revisited after documentation iteration
-
+### Local
+```bash
+    terraform -chdir=terraform init -backend-config=../envs/local/backend.hcl
+```
 ---
 
-## Relationship to Other Repositories
+## Terraform Plan
 
-- **order-system-services**
-  - Application code and Docker images
+### AWS
+```bash
+    terraform -chdir=terraform plan -var-file=../envs/aws/terraform.tfvars
+```
+### Local
+```bash
+    terraform -chdir=terraform plan -var-file=../envs/local/terraform.tfvars
+```
+---
 
-- **order-system-infrastructure**
-  - Cloud provisioning and deployment topology
+## Terraform Apply
+
+### AWS
+```bash
+    terraform -chdir=terraform apply -var-file=../envs/aws/terraform.tfvars
+```
+### Local
+```bash
+    terraform -chdir=terraform apply -var-file=../envs/local/terraform.tfvars
+```
+---
+
+## Terraform Destroy
+
+### AWS
+```bash
+    terraform -chdir=terraform destroy -var-file=../envs/aws/terraform.tfvars
+```
+### Local
+```bash
+    terraform -chdir=terraform destroy -var-file=../envs/local/terraform.tfvars
+```
+---
+
+## Infrastructure Teardown Script
+
+### AWS
+Destroy AWS infrastructure
+```bash
+    ./scripts/infra-destroy.sh aws
+```
+
+### AWS
+Destroy local environment
+```bash
+    ./scripts/infra-destroy.sh local
+```
 
 ---
 
 ## Future Evolution
 
-Planned but postponed:
-
-- Remote Terraform backend
-- Multiple environments
-- CI/CD automation
-- Visual infrastructure diagrams
-- Observability
+-   Remote Terraform backend
+-   Multiple environments
+-   CI/CD automation
+-   Observability

@@ -1,5 +1,9 @@
+locals {
+  service_name = "order-service"
+}
+
 resource "aws_ecs_cluster" "main" {
-  name = "${var.project_name}-ecs-cluster"
+  name = "${var.project_name_prefix}-ecs-cluster"
 }
 
 # ============================================================
@@ -7,7 +11,7 @@ resource "aws_ecs_cluster" "main" {
 # ============================================================
 
 resource "aws_ecr_repository" "order_service" {
-  name                 = "order-processing-system-order-service"
+  name                 = "${var.project_name}-${local.service_name}"
   image_tag_mutability = "MUTABLE"
 
   # allow Terraform to delete images when destroying infra
@@ -18,8 +22,8 @@ resource "aws_ecr_repository" "order_service" {
   }
 
   tags = {
-    Name        = "order-processing-system-order-service"
-    Environment = "aws"
+    Name        = "${var.project_name}-${local.service_name}"
+    Environment = var.environment
   }
 }
 
@@ -53,7 +57,7 @@ resource "aws_ecr_lifecycle_policy" "order_service" {
 # - pull images from ECR
 # - write logs to CloudWatch
 resource "aws_iam_role" "ecs_execution_role" {
-  name = "${var.project_name}-ecs-execution-role"
+  name = "${var.project_name_prefix}-ecs-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -78,7 +82,7 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
 # IAM role assumed by the application container itself
 # Used for runtime AWS access (e.g. Secrets Manager, SSM)
 resource "aws_iam_role" "ecs_task_role" {
-  name = "${var.project_name}-ecs-task-role"
+  name = "${var.project_name_prefix}-ecs-task-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -99,7 +103,7 @@ resource "aws_iam_role" "ecs_task_role" {
 # ============================================================
 
 resource "aws_ecs_task_definition" "order_service" {
-  family                   = "${var.project_name}-order-service"
+  family                   = "${var.project_name_prefix}-order-service"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -128,7 +132,7 @@ resource "aws_ecs_task_definition" "order_service" {
         },
         {
           name  = "SPRING_DATASOURCE_URL"
-          value = "jdbc:postgresql://${aws_db_instance.postgres.endpoint}/orders"
+          value = "jdbc:postgresql://${aws_db_instance.postgres.endpoint}/${var.db_name}"
         },
         {
           name  = "SPRING_DATASOURCE_USERNAME"
@@ -143,7 +147,7 @@ resource "aws_ecs_task_definition" "order_service" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/${var.project_name}/order-service"
+          awslogs-group         = "/ecs/${var.project_name_prefix}/order-service"
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
         }

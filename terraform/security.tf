@@ -1,5 +1,5 @@
 resource "aws_security_group" "rds" {
-  name   = "${var.project_name}-rds-sg"
+  name   = "${var.project_name_prefix}-rds-sg"
   vpc_id = aws_vpc.main.id
 
   ingress {
@@ -18,7 +18,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_security_group" "ecs" {
-  name   = "${var.project_name}-ecs-sg"
+  name   = "${var.project_name_prefix}-ecs-sg"
   vpc_id = aws_vpc.main.id
 
   egress {
@@ -34,7 +34,7 @@ resource "aws_security_group" "ecs" {
 # ============================================================
 
 resource "aws_security_group" "alb" {
-  name   = "${var.project_name}-alb-sg"
+  name   = "${var.project_name_prefix}-alb-sg"
   vpc_id = aws_vpc.main.id
 
   # Allow HTTP from the internet

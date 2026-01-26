@@ -1,5 +1,5 @@
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-db-subnets"
+  name       = "${var.project_name_prefix}-db-subnets"
   subnet_ids = [
     aws_subnet.public_a.id,
     aws_subnet.public_b.id
@@ -7,7 +7,7 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier              = "${var.project_name}-postgres"
+  identifier              = "${var.project_name_prefix}-postgres"
   engine                  = "postgres"
   engine_version          = "16"
   instance_class          = "db.t3.micro"

@@ -4,12 +4,12 @@
 
 # Explicit log group so logs are predictable and lifecycle-managed
 resource "aws_cloudwatch_log_group" "order_service" {
-  name              = "/ecs/${var.project_name}/order-service"
+  name              = "/ecs/${var.project_name_prefix}/order-service"
   retention_in_days = 7
 
   tags = {
     Name        = "${var.project_name}-order-service-logs"
-    Environment = "aws"
+    Environment = var.environment
   }
 }
 
@@ -18,7 +18,7 @@ resource "aws_cloudwatch_log_group" "order_service" {
 # ============================================================
 
 resource "aws_lb" "order_service" {
-  name               = "${var.project_name}-alb"
+  name               = "${var.project_name_prefix}-alb"
   load_balancer_type = "application"
   internal           = false
 
@@ -33,7 +33,7 @@ resource "aws_lb" "order_service" {
 
   tags = {
     Name        = "${var.project_name}-alb"
-    Environment = "aws"
+    Environment = var.environment
   }
 }
 
@@ -42,7 +42,7 @@ resource "aws_lb" "order_service" {
 # ============================================================
 
 resource "aws_lb_target_group" "order_service" {
-  name        = "${var.project_name}-tg"
+  name        = "${var.project_name_prefix}-tg"
   port        = 8081
   protocol    = "HTTP"
   target_type = "ip"
@@ -60,7 +60,7 @@ resource "aws_lb_target_group" "order_service" {
 
   tags = {
     Name        = "${var.project_name}-tg"
-    Environment = "aws"
+    Environment = var.environment
   }
 }
 
@@ -84,7 +84,7 @@ resource "aws_lb_listener" "http" {
 # ============================================================
 
 resource "aws_ecs_service" "order_service" {
-  name            = "${var.project_name}-order-service"
+  name            = "${var.project_name_prefix}-order-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.order_service.arn
   launch_type     = "FARGATE"
@@ -116,6 +116,6 @@ resource "aws_ecs_service" "order_service" {
 
   tags = {
     Name        = "${var.project_name}-order-service"
-    Environment = "aws"
+    Environment = var.environment
   }
 }
