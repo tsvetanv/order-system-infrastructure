@@ -201,7 +201,7 @@ Destroy AWS infrastructure
     ./scripts/infra-destroy.sh aws
 ```
 
-### AWS
+### Local
 Destroy local environment
 ```bash
     ./scripts/infra-destroy.sh local
