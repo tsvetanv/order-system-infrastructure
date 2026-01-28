@@ -33,3 +33,9 @@ variable "db_password" {
   description = "PostgreSQL password"
   sensitive   = true
 }
+
+variable "github_repository_owner" {
+  type        = string
+  description = "GitHub organization or user that owns the repositories"
+}
+
